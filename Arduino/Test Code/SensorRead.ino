@@ -95,9 +95,7 @@ void loop() {
   
   Serial.print("RPM: ");
   Serial.print(RPM);
-
-  //Serial.print("\tFade: ");
-  //Serial.print(fadeValue);
+]
   Serial.print("\t\tAmps = "); // shows the voltage measured
   Serial.println(Amps, 3); // the '3' after voltage allows you to display 3 digits after decimal point
   
