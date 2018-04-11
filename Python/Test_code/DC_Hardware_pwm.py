@@ -8,7 +8,7 @@ import os
 #os.system("sudo pigpiod")
 pi=pigpio.pi()
 
-duty=5            
+duty=50            
 final = duty*10000
 pin =12
 
@@ -27,6 +27,9 @@ print(q)
 print(z)
 while True:
     #for i in range(1, 10):
-    time.sleep(1)
+    q=pi.hardware_PWM(pin, 30000, 1000000)
+    time.sleep(5)
+    q=pi.hardware_PWM(pin, 30000, final)
+    time.sleep(5)
 
 GPIO.cleanup()
