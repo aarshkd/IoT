@@ -5,7 +5,7 @@ import os
 #class Motor():
     #Initialize Motor class
  #   def __init__(self):
-os.system("sudo pigpiod")
+#os.system("sudo pigpiod")
 pi=pigpio.pi()
 
 duty=5            
