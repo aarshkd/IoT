@@ -24,6 +24,7 @@ class Motor():
             self.maxRPM = self.connect.readline()
             self.maxRPM = re.findall(r"[-+]?\d*\.\d+|\d+", self.maxRPM)
             self.maxRPM = int(self.maxRPM[0])
+        self.fb.put('/Current_Motor_Readings','userRPM', self.maxRPM)
         print 'Ready to go!!!'
 
         #Signaling Arduino
@@ -54,15 +55,36 @@ class Motor():
         self.pi.set_mode(self.PWM_pin, pigpio.OUTPUT)
         self.pi.set_mode(self.debug_pin, pigpio.OUTPUT)
         self.pi.write(self.debug_pin, 0)
+
+        self.encoderRPM = 0
+        self.current = 0
+        self.power = 0
+        self.userRPM = 0
+        self.fb.put('/Current_Motor_Readings','Current', self.current)
+        self.fb.put('/Current_Motor_Readings','encoderRPM', self.encoderRPM)
+        self.fb.put('/Current_Motor_Readings','Power', self.power)
+        self.fb.put('/Current_Motor_Readings','userRPM', self.userRPM)
         
         while True:
             #Switch on-off routin
             self.switch = self.fb.get('/Current_Motor_Readings/Switch', None)
             if(self.oldSwitch==0 and self.switch==1):
                 self.init()
+                self.oldValue = self.maxRPM
+            
             if(self.oldSwitch==1 and self.switch==0):
                 self.pi.hardware_PWM(self.PWM_pin, self.PWM_frequency, 0)
-                self.oldValue = self.maxRPM
+                print 'Routine check!'
+                self.encoderRPM = 0
+                self.current = 0
+                self.power = 0
+                self.userRPM = 0
+                self.fb.put('/Current_Motor_Readings','Current', self.current)
+                self.fb.put('/Current_Motor_Readings','encoderRPM', self.encoderRPM)
+                self.fb.put('/Current_Motor_Readings','Power', self.power)
+                self.fb.put('/Current_Motor_Readings','userRPM', self.userRPM)
+                print 'The End!'
+                
             self.oldSwitch = self.switch
             
             while self.switch:                
@@ -99,7 +121,7 @@ class Motor():
     def OpenLoop(self):
         #PID off routin
         self.userDutyCycle = self.userDutyCycle * 10000
-        if(self.oldValue != self.userRPM):
+        if(self.oldValue != self.userRPM and self.userRPM < self.maxRPM):
             self.pi.hardware_PWM(self.PWM_pin, self.PWM_frequency, self.userDutyCycle)
             print 'PID off : Gayo andar!'
         self.oldValue = self.userRPM
@@ -112,7 +134,7 @@ class Motor():
         
         self.feedDutyCycle = self.feedDutyCycle * 10000 + self.userDutyCycle * 10000
         print 'feed dutycycle: ',  self.feedDutyCycle/10000, 'FeedRPM : ', self.feedRPM
-        if(self.feedDutyCycle > 0 and self.feedDutyCycle < 1000000):
+        if(self.feedDutyCycle > 0 and self.feedDutyCycle < 1000000 and self.userRPM < self.maxRPM):
             self.pi.hardware_PWM(self.PWM_pin, self.PWM_frequency, self.feedDutyCycle)
             print 'PID on: Gayo andar!'
 
