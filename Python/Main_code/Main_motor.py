@@ -25,6 +25,7 @@ class Motor():
             self.maxRPM = re.findall(r"[-+]?\d*\.\d+|\d+", self.maxRPM)
             self.maxRPM = int(self.maxRPM[0])
         self.fb.put('/Current_Motor_Readings','userRPM', self.maxRPM)
+        # self.userRPM = self.fb.get('/Current_Motor_Readings/userRPM', None)
         print 'Ready to go!!!'
 
         #Signaling Arduino
@@ -34,8 +35,8 @@ class Motor():
         self.d_error = 0
         self.i_error = 0
         self.feedRPM = 0
-        self.kp = 0.05
-        self.kd = 0.03
+        self.kp = 0.3 #0.2
+        self.kd = 0.05 #0.05
         self.ki = 0.0000
         
     def mymap(self, x, in_min, in_max, out_min, out_max):
@@ -101,10 +102,11 @@ class Motor():
                 self.fb.put('/Current_Motor_Readings','encoderRPM', self.encoderRPM)
                 self.fb.put('/Current_Motor_Readings','Power', self.power)
                 self.userRPM = self.fb.get('/Current_Motor_Readings/userRPM', None)
+                # print self.userRPM
                 self.PID_Status = self.fb.get('/Current_Motor_Readings/PID', None)
 
                 #Debugging
-                print 'Min: 0' + ' Max: ', self.maxRPM
+                # print 'Min: 0' + ' Max: ', self.maxRPM
 
                 self.userDutyCycle = int(round(self.mymap(self.userRPM, 0, self.maxRPM, 5, 100)))
                 
@@ -128,11 +130,13 @@ class Motor():
 
     def CloseLoop(self):
         #PID on routin
+        # self.userRPM = self.fb.get('/Current_Motor_Readings/userRPM', None)
         self.p_error = self.userRPM - self.encoderRPM
         self.feedRPM = self.feedRPM + (self.p_error*self.kp) + (self.d_error*self.kd) + (self.i_error*self.ki)
         self.feedDutyCycle = int(round(self.mymap(self.feedRPM, 0, self.maxRPM, 5, 100)))
         
-        self.feedDutyCycle = self.feedDutyCycle * 10000 + self.userDutyCycle * 10000
+        self.feedDutyCycle = self.feedDutyCycle * 10000 
+
         print 'feed dutycycle: ',  self.feedDutyCycle/10000, 'FeedRPM : ', self.feedRPM
         if(self.feedDutyCycle > 0 and self.feedDutyCycle < 1000000 and self.userRPM < self.maxRPM):
             self.pi.hardware_PWM(self.PWM_pin, self.PWM_frequency, self.feedDutyCycle)
