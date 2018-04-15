@@ -5,7 +5,7 @@ uint16_t Ton = 0;
 uint16_t Toff = 0;
 uint32_t temp1 = 0; 
 uint32_t temp2 = 0;
-float freq = 0.0;
+float freq = 0.00;
 
 uint8_t PPR = 210;
 uint32_t RPM = 0;
