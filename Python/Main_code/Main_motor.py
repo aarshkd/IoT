@@ -9,7 +9,7 @@ class Motor():
     def init(self):     
         #Serial port initialization
         self.connect = serial.Serial()
-        self.connect.port = "/dev/ttyACM0"
+        self.connect.port = "/dev/ttyACM0" #ttyS0 #ttyACM0
         self.connect.baudrate = 115200
         self.connect.open()
         
@@ -28,9 +28,8 @@ class Motor():
         self.pi.hardware_PWM(self.PWM_pin, self.PWM_frequency, self.input_duty_cycle)
 
         #Finding Maximum RPM
-        for tr in range(1,3):
+        for tr in range(1,5):
             self.maxRPM = self.connect.readline()
-            print self.maxRPM
             self.maxRPM = re.findall(r"[-+]?\d*\.\d+|\d+", self.maxRPM)
             self.maxRPM = int(self.maxRPM[0])
         try:
@@ -43,9 +42,9 @@ class Motor():
         self.d_error = 0
         self.i_error = 0
         self.feedRPM = 500
-        self.kp = 0.25 #0.25
-        self.kd = 0.035 #0.04
-        self.ki = 0.0004
+        self.kp = 0.10 #0.25
+        self.kd = 0.03 #0.04
+        self.ki = 0.0002
         
     def mymap(self, x, in_min, in_max, out_min, out_max):
         return ((x - in_min)*(out_max - out_min)/(in_max - in_min)) + out_min
@@ -66,9 +65,6 @@ class Motor():
         self.pi.set_mode(self.PWM_pin, pigpio.OUTPUT)   
         self.pi.set_mode(self.IN1_pin, pigpio.OUTPUT)
         self.pi.set_mode(self.IN2_pin, pigpio.OUTPUT)
-
-        # self.pi.write(self.IN1_pin,0)
-        # self.pi.write(self.IN2_pin,1)
         
         self.encoderRPM = 0
         self.current = 0
@@ -176,11 +172,8 @@ class Motor():
             print 'PID on: Gayo andar!'
         elif(self.feedDutyCycle<=0):
             self.feedDutyCycle = 10
-            print 'Minus'
         elif(self.feedDutyCycle >=100):
-            self.feedDutyCycle = 90
-            print 'plus'
-            
+            self.feedDutyCycle = 90            
 
         self.d_error = self.p_error
         self.i_error = self.i_error + self.d_error
