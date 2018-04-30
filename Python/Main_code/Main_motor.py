@@ -9,7 +9,7 @@ class Motor():
     def init(self):     
         #Serial port initialization
         self.connect = serial.Serial()
-        self.connect.port = "/dev/ttyACM0" #ttyS0 #ttyACM0
+        self.connect.port = "/dev/ttyS0" #ttyS0 #ttyACM0
         self.connect.baudrate = 115200
         self.connect.open()
         
@@ -42,9 +42,9 @@ class Motor():
         self.d_error = 0
         self.i_error = 0
         self.feedRPM = 500
-        self.kp = 0.10 #0.25
-        self.kd = 0.03 #0.04
-        self.ki = 0.0002
+        self.kp = 0.4 #0.25
+        self.kd = 0.05 #0.04
+        self.ki = 0.000
         
     def mymap(self, x, in_min, in_max, out_min, out_max):
         return ((x - in_min)*(out_max - out_min)/(in_max - in_min)) + out_min
@@ -70,7 +70,7 @@ class Motor():
         self.current = 0
         self.power = 0
         self.userRPM = 0
-        self.dir = 1
+        self.dir = 0
         try:
             self.fb.put('/Current_Motor_Readings','Current', self.current)
             self.fb.put('/Current_Motor_Readings','encoderRPM', self.encoderRPM)
@@ -88,7 +88,7 @@ class Motor():
             except Exception:
                 pass
 
-            if(self.olddir != self.dir):
+            if(self.olddir != self.dir and self.switch==1):
                 self.init()
                 
             self.olddir = self.dir
@@ -106,7 +106,7 @@ class Motor():
                 try:
                     self.fb.put('/Current_Motor_Readings','Current', self.current)
                     self.fb.put('/Current_Motor_Readings','encoderRPM', self.encoderRPM)
-                    self.fb.put('/Current_Motor_Readings','Power', self.power)
+                    self.fb.put('w/Current_Motor_Readings','Power', self.power)
                     self.fb.put('/Current_Motor_Readings','userRPM', self.userRPM)
                 except Exception:
                     pass               
@@ -162,19 +162,22 @@ class Motor():
     def CloseLoop(self):
         #PID on routin
         self.p_error = self.userRPM - self.encoderRPM
-        self.feedRPM = int(self.feedRPM + (self.p_error*self.kp) + (self.d_error*self.kd) + (self.i_error*self.ki))
-        self.feedDutyCycle = int(self.mymap(self.feedRPM, 0, self.maxRPM, 5, 100))
+        self.feedRPM = int(self.feedRPM + ((self.p_error*self.kp) + (self.d_error*self.kd) + (self.i_error*self.ki)))
+        
+        if(self.feedRPM > 0 and self.feedRPM < self.maxRPM):
+            self.feedDutyCycle = self.mymap(self.feedRPM, 0, self.maxRPM, 0, 100)
+
         print 'p_error: ',self.p_error, '   userRPM: ', self.userRPM,'   encoderRPM: ',self.encoderRPM,'   feedRPM: ',self.feedRPM,'   feedDutyCycle: ',self.feedDutyCycle
-        self.feedDutyCycle = self.feedDutyCycle * 10000 
 
-        if(self.feedDutyCycle > 0 and self.feedDutyCycle < 1000000 and self.userRPM <= self.maxRPM):
-            self.pi.hardware_PWM(self.PWM_pin, self.PWM_frequency, self.feedDutyCycle)
+        # if(self.feedDutyCycle<=0):
+        #     self.feedDutyCycle = 10
+        # elif(self.feedDutyCycle >=100):
+        #     self.feedDutyCycle = 90  
+
+        if(self.feedDutyCycle >= 0 and self.feedDutyCycle <= 100 and self.userRPM <= self.maxRPM):
+            self.pi.hardware_PWM(self.PWM_pin, self.PWM_frequency, self.feedDutyCycle*10000)
             print 'PID on: Gayo andar!'
-        elif(self.feedDutyCycle<=0):
-            self.feedDutyCycle = 10
-        elif(self.feedDutyCycle >=100):
-            self.feedDutyCycle = 90            
-
+                  
         self.d_error = self.p_error
         self.i_error = self.i_error + self.d_error
 
