@@ -169,11 +169,6 @@ class Motor():
 
         print 'p_error: ',self.p_error, '   userRPM: ', self.userRPM,'   encoderRPM: ',self.encoderRPM,'   feedRPM: ',self.feedRPM,'   feedDutyCycle: ',self.feedDutyCycle
 
-        # if(self.feedDutyCycle<=0):
-        #     self.feedDutyCycle = 10
-        # elif(self.feedDutyCycle >=100):
-        #     self.feedDutyCycle = 90  
-
         if(self.feedDutyCycle >= 0 and self.feedDutyCycle <= 100 and self.userRPM <= self.maxRPM):
             self.pi.hardware_PWM(self.PWM_pin, self.PWM_frequency, self.feedDutyCycle*10000)
             print 'PID on: Gayo andar!'
